@@ -2,7 +2,7 @@
 [global]
 
    workgroup = <%= node[:realm][:netbios] %>
-   password server = <%= node[:realm][:servers].join(' ') %>
+   password server = <%= [* node[:realm][:servers]].join(' ') %>
    realm = <%= node[:realm][:realm_name].upcase %>
    allow trusted domains = no
    interfaces = <%= node[:network][:default_interface] %>

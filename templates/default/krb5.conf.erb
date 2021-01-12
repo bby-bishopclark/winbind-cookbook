@@ -8,22 +8,23 @@
 
 [libdefaults]
  default_realm = <%= node[:realm][:realm_name].upcase %>
- dns_lookup_realm = false
- dns_lookup_kdc = false
+ dns_lookup_realm = <%= node.read(:realm,:dns_lookup_realm)|| false %>
+ dns_lookup_kdc = <%= node.read(:realm,:dns_lookup_kdc)|| false %>
+ rdns=false
  ticket_lifetime = 24h
  renew_lifetime = 7d
  forwardable = true
 
 [realms]
  <%= node[:realm][:realm_name].upcase %> = {
-<% node[:realm][:servers].each do |srv|
+<% [* node[:realm][:servers]].each do |srv|
      if srv != '*' %>
   kdc = <%= srv %>
 <%
    end
- end unless node[:realm][:servers].none? %>
+ end unless [* node[:realm][:servers]].none? %>
 #  admin_server = _kerberos._tcp.<%= node[:realm][:realm_name] %>
-  admin_server = <%= node[:realm][:servers][0] %>
+  admin_server = <%= [* node[:realm][:servers]][0] %>
  }
 
 [domain_realm]

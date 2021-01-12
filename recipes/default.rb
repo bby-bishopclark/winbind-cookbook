@@ -7,10 +7,40 @@
 # cheat around the lack of crypto dbags
 include_recipe 'all-datacenter-attributes::realm'	# AD centralized settings
 include_recipe 'all-datacenter-attributes::ntp'		# centralized NTP settings
-include_recipe 'ntp'					# NTP server list
 
+case true	# what a cop-out
+when  node['platform_family'] == 'rhel' && node['platform_version'].to_i > 7 
+# if machine is chrony-codependent, set our addiction to suit
+# install chrony and config
+  package 'chrony'
+
+  file '/etc/chrony.conf' do
+    content <<-EOC
+#{[*node.read(*%w(ntp servers))].map{|x| "pool #{x}"}.join("\n")}
+driftfile /var/lib/chrony/drift
+makestep 1.0 3
+rtcsync
+logdir /var/log/chrony
+EOC
+  end
+
+  service 'chrony' do
+    service_name 'chronyd'
+    supports restart: true, status: true, reload: true
+    action %i(start enable)
+  end
+
+# remove ntp
+  package 'ntp' do
+    action	:remove
+  end
+
+else
+  include_recipe 'ntp'					# NTP server list
+  
 package %w(chrony) do
   action	:remove
+end
 end
 
 # as per
@@ -19,18 +49,44 @@ end
 # oddjobd/mkhomedir/dbus/systemd fridge-art matrix.  Plan for this to
 # change the software list below (and explicitly kill oddjobd to fix
 # the behaviour)
+
+#execute "yum clean all ; rm -rf /var/cache/yum/"
+# RHEL-RHSM-linked machines are especially frail around repos, so
+# let's aggressively kill caches for a while
+
+package %w(samba samba-common samba-client samba-winbind
+           samba-winbind-clients )
+  .map{|x| x+" < 3.9.9"} do
+  action :remove
+end
+
+case "#{node[:platform_family]}_#{node[:platform_version].to_i}"
+when 'rhel_8'
+  package %w[oddjob-mkhomedir samba-winbind-clients samba-winbind adcli authselect-compat] do
+    #oddjob samba-common-tools samba-winbind-krb5-locator
+    flush_cache [ :before ]
+  end
+
+when 'rhel_7'
 package %w(PackageKit samba samba-client samba-common samba-winbind
 	samba-winbind-clients oddjob-mkhomedir dbus pam_krb5 krb5-workstation
-	adcli)
-
-  package %w(authconfig)
+	adcli authconfig) do
+    flush_cache [ :before ]
+end
+else
+package %w(PackageKit samba4 samba4-client samba4-common
+           samba4-winbind samba4-winbind-clients oddjob-mkhomedir dbus
+           pam_krb5 krb5-workstation authconfig adcli) do
+    flush_cache [ :before ]
+end
+end
 
   authcmd="authconfig " +
     "--enablewinbind --enablewinbindauth --enablewinbindoffline --disablecache " +
     "--enablewinbindusedefaultdomain " +
     "--smbsecurity=ads --smbworkgroup=#{node[:realm][:netbios]} " +
     "--smbrealm=#{node[:realm][:directory_name].upcase} " +
-    "--smbservers=#{node[:realm][:servers].join(',')} " +
+    "--smbservers=#{[* node[:realm][:servers]].join(',')} " +
     "--winbindtemplatehomedir=/home/%U --winbindtemplateshell=/bin/bash " +
     "--krb5realm=#{node[:realm][:directory_name].upcase} " +
     "--disablekrb5kdcdns --disablekrb5realmdns " +
@@ -46,7 +102,7 @@ package %w(PackageKit samba samba-client samba-common samba-winbind
 
   execute "authconfig" do
 #    command	"#{authcmd} > /etc/.authconfig"
-    command	authcmd
+    command	"#{authcmd} || rm -vf /etc/.authcmd"	# Don't fail, keep going
     action	:nothing
 #    creates	'/etc/.authconfig'
   end
@@ -92,14 +148,14 @@ package %w(PackageKit samba samba-client samba-common samba-winbind
   # between AD servers, and then try again.
   (node[:realm][:secgroups]||[]).each do |grp|
     execute "add #{node[:fqdn]} to group #{grp}@#{node[:realm][:realm_name]}" do
-      sensitive	true
+#      sensitive	true
       command "adcli add-member " + 
         "-D #{node[:realm][:realm_name]} " + 
         "-S #{node[:realm][:servers][0]} " + 
         "-U #{node.run_state['realm_secname']} " + 
         "#{grp} #{node[:fqdn].split('.')[0]}$ " + 
         "<<< '#{node.run_state['realm_secpass']}'"
-      only_if "id #{node[:fqdn].split('.')[0]}$|grep -vqi '(#{grp})'"
+    not_if "getent group #{grp} | grep -qi '[:,]#{node[:fqdn].split('.')[0]}\\$'"
     end   	# execute
   end		# each
 

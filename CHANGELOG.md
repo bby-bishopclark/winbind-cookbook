@@ -1,4 +1,19 @@
 ## change log for winbind
+0.7.0
+	bc - move 'stringvar' to [* stringorarrayvar ][0] to handle the
+	     array-of-strings case
+	bc - ugly case statement to handle el8 fixating on chrony over ntp
+	bc - also add in a crappy chrony baseline config for now
+	bc - move the cache-clearing into the package statements instead
+	     so it'll morph to f'n DNF equivalents when executed by el8
+	     machines
+	bc - create ad-hoc distro_ver case statement - uch - to move
+	     package lists to more complicated recipe code instead of just
+	     cleaning it up into attributes.  \sigh.
+	bc - change authcommand so it won't interrupt post-clone
+	     instantiation, given the auth can be re-run later.
+	bc - add cheap customization in some terms in krb5.conf
+
 0.6.0
 	bc - move the sssd/winbind decision out
 
