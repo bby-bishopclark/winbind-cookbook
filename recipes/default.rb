@@ -6,42 +6,7 @@
 
 # cheat around the lack of crypto dbags
 include_recipe 'all-datacenter-attributes::realm'	# AD centralized settings
-include_recipe 'all-datacenter-attributes::ntp'		# centralized NTP settings
-
-case true	# what a cop-out
-when  node['platform_family'] == 'rhel' && node['platform_version'].to_i > 7 
-# if machine is chrony-codependent, set our addiction to suit
-# install chrony and config
-  package 'chrony'
-
-  file '/etc/chrony.conf' do
-    content <<-EOC
-#{[*node.read(*%w(ntp servers))].map{|x| "pool #{x}"}.join("\n")}
-driftfile /var/lib/chrony/drift
-makestep 1.0 3
-rtcsync
-logdir /var/log/chrony
-EOC
-  end
-
-  service 'chrony' do
-    service_name 'chronyd'
-    supports restart: true, status: true, reload: true
-    action %i(start enable)
-  end
-
-# remove ntp
-  package 'ntp' do
-    action	:remove
-  end
-
-else
-  include_recipe 'ntp'					# NTP server list
-  
-package %w(chrony) do
-  action	:remove
-end
-end
+include_recipe '::ntp'
 
 # as per
 # https://web.archive.org/web/20180927175218/https://access.redhat.com/discussions/903523
@@ -121,7 +86,7 @@ end
   # addresses because authconfig is weak.  grr....
   template '/etc/samba/smb.conf'
   template '/etc/security/pam_winbind.conf'
-  template '/etc/krb5.conf'
+  include_recipe '::krb5'	# included so we can separate and run ad-hoc :-(
 
   (node['platform_version'].split('.')[0].to_i >= 7 ? %w(dbus oddjobd) : %w(messagebus oddjobd)).each do |svc|
     service svc do 

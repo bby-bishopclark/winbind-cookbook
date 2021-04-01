@@ -1,4 +1,17 @@
 ## change log for winbind
+0.8.0
+	bc - move the realm inclusion from ::default to ==default because
+	     we don't need to include adc::realm and we can just use
+	     adc==realm properly.
+
+	bc - hack out some chrony/ntp stuff and place in sub-recipe for
+	     one-off cherrypicking of ntp.conf updates.
+
+	bc - hack out the krb5.conf template maintenance to separate
+	     sub-recipe for one-off cherrypicking of krb5.conf
+	     maintenance, while still understanding that smb.conf needs
+	     identical changes we can't make yet.
+
 0.7.0
 	bc - move 'stringvar' to [* stringorarrayvar ][0] to handle the
 	     array-of-strings case
