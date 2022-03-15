@@ -1,4 +1,7 @@
 ## change log for winbind
+0.9.0
+	bc - ensure service is enabled on install, started after changes.
+
 0.8.0
 	bc - move the realm inclusion from ::default to ==default because
 	     we don't need to include adc::realm and we can just use

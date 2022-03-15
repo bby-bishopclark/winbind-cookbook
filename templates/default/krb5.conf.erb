@@ -10,7 +10,7 @@
  default_realm = <%= node[:realm][:realm_name].upcase %>
  dns_lookup_realm = <%= node.read(:realm,:dns_lookup_realm)|| false %>
  dns_lookup_kdc = <%= node.read(:realm,:dns_lookup_kdc)|| false %>
- rdns=false
+ rdns=false	# AD has bad RDNS, but can cause issues with SPNs missing CNAMEs
  ticket_lifetime = 24h
  renew_lifetime = 7d
  forwardable = true

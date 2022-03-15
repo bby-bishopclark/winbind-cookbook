@@ -96,7 +96,7 @@ end
   
   %w(winbind).each do |svc|
     service svc do
-      action :nothing
+      action	[:enable]
     end
   end
 
