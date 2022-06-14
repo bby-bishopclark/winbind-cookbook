@@ -1,4 +1,9 @@
 ## change log for winbind
+0.10.0	- infrastructure/misc#509
+	bc - avoid 'cache flush' in package invocation for debians
+	bc - add 'hosts allow = 127.' to cheap smb.conf template for
+		crude ACL enforcement.  Suggested: DS
+
 0.9.0
 	bc - ensure service is enabled on install, started after changes.
 

@@ -29,20 +29,20 @@ case "#{node[:platform_family]}_#{node[:platform_version].to_i}"
 when 'rhel_8'
   package %w[oddjob-mkhomedir samba-winbind-clients samba-winbind adcli authselect-compat] do
     #oddjob samba-common-tools samba-winbind-krb5-locator
-    flush_cache [ :before ]
+    flush_cache [ :before ] unless node['platform_family'] == 'debian'
   end
 
 when 'rhel_7'
 package %w(PackageKit samba samba-client samba-common samba-winbind
 	samba-winbind-clients oddjob-mkhomedir dbus pam_krb5 krb5-workstation
 	adcli authconfig) do
-    flush_cache [ :before ]
+    flush_cache [ :before ] unless node['platform_family'] == 'debian'
 end
 else
 package %w(PackageKit samba4 samba4-client samba4-common
            samba4-winbind samba4-winbind-clients oddjob-mkhomedir dbus
            pam_krb5 krb5-workstation authconfig adcli) do
-    flush_cache [ :before ]
+    flush_cache [ :before ] unless node['platform_family'] == 'debian'
 end
 end
 
